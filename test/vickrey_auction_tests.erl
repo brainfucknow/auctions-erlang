@@ -26,3 +26,18 @@ vickrey_auction_test() ->
     %% Winner should be buyer2 (highest bid 20), but price should be 10 (second highest bid)
     Winner = blind_auction:try_get_amount_and_winner(StateEnded),
     ?assertEqual({ok, {10, <<"buyer2">>}}, Winner).
+
+blind_vs_vickrey_test() ->
+    %% Blind Auction
+    BlindAuction = blind_auction:new(#{type => blind, ends_at => sample_ends_at()}),
+    {StateB1, _} = blind_auction:add_bid(bid1(), BlindAuction),
+    {StateB2, _} = blind_auction:add_bid(bid2(), StateB1),
+    StateBEnded = blind_auction:inc(sample_ends_at(), StateB2),
+    ?assertEqual({ok, {20, <<"buyer2">>}}, blind_auction:try_get_amount_and_winner(StateBEnded)),
+
+    %% Vickrey Auction
+    VickreyAuction = blind_auction:new(#{type => vickrey, ends_at => sample_ends_at()}),
+    {StateV1, _} = blind_auction:add_bid(bid1(), VickreyAuction),
+    {StateV2, _} = blind_auction:add_bid(bid2(), StateV1),
+    StateVEnded = blind_auction:inc(sample_ends_at(), StateV2),
+    ?assertEqual({ok, {10, <<"buyer2">>}}, blind_auction:try_get_amount_and_winner(StateVEnded)).
