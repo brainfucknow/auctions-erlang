@@ -10,6 +10,9 @@ Get a single auction.
 Get all auctions.
 Get a list of auctions.
 
+- `POST` to `/auctions`, OperationId: `create_auction`:
+Create an auction.
+
 """.
 
 -behaviour(cowboy_rest).
@@ -30,11 +33,12 @@ Get a list of auctions.
 
 -export_type([class/0, operation_id/0]).
 
--type class() :: 'getAuctions'.
+-type class() :: 'getAuctions' | 'createAuction'.
 
 -type operation_id() ::
     'get_auction' %% Get a single auction
-    | 'get_auctions'. %% Get all auctions
+    | 'get_auctions' %% Get all auctions
+    | 'create_auction'. %% Create an auction
 
 
 -record(state,
@@ -66,6 +70,8 @@ allowed_methods(Req, #state{operation_id = 'get_auction'} = State) ->
     {[<<"GET">>], Req, State};
 allowed_methods(Req, #state{operation_id = 'get_auctions'} = State) ->
     {[<<"GET">>], Req, State};
+allowed_methods(Req, #state{operation_id = 'create_auction'} = State) ->
+    {[<<"POST">>], Req, State};
 allowed_methods(Req, State) ->
     {[], Req, State}.
 
@@ -76,6 +82,12 @@ is_authorized(Req, State) ->
 
 -spec content_types_accepted(cowboy_req:req(), state()) ->
     {[{binary(), atom()}], cowboy_req:req(), state()}.
+content_types_accepted(Req, #state{operation_id = 'create_auction'} = State) ->
+    {[
+      {<<"application/json">>, handle_type_accepted},
+      {<<"text/json">>, handle_type_accepted},
+      {<<"application/*+json">>, handle_type_accepted}
+     ], Req, State};
 content_types_accepted(Req, #state{operation_id = 'get_auction'} = State) ->
     {[], Req, State};
 content_types_accepted(Req, #state{operation_id = 'get_auctions'} = State) ->
@@ -85,6 +97,8 @@ content_types_accepted(Req, State) ->
 
 -spec valid_content_headers(cowboy_req:req(), state()) ->
     {boolean(), cowboy_req:req(), state()}.
+valid_content_headers(Req, #state{operation_id = 'create_auction'} = State) ->
+    {true, Req, State};
 valid_content_headers(Req, #state{operation_id = 'get_auction'} = State) ->
     {true, Req, State};
 valid_content_headers(Req, #state{operation_id = 'get_auctions'} = State) ->
@@ -94,6 +108,10 @@ valid_content_headers(Req, State) ->
 
 -spec content_types_provided(cowboy_req:req(), state()) ->
     {[{binary(), atom()}], cowboy_req:req(), state()}.
+content_types_provided(Req, #state{operation_id = 'create_auction'} = State) ->
+    {[
+      {<<"application/json">>, handle_type_provided}
+     ], Req, State};
 content_types_provided(Req, #state{operation_id = 'get_auction'} = State) ->
     {[
       {<<"text/plain">>, handle_type_provided},
@@ -120,7 +138,11 @@ delete_resource(Req, State) ->
 handle_type_accepted(Req, #state{operation_id = OperationID,
                                  accept_callback = Handler,
                                  context = Context} = State) ->
-    {Res, Req1, Context1} = Handler(getAuctions, OperationID, Req, Context),
+    Class = case OperationID of
+        'create_auction' -> 'createAuction';
+        _ -> 'getAuctions'
+    end,
+    {Res, Req1, Context1} = Handler(Class, OperationID, Req, Context),
     {Res, Req1, State#state{context = Context1}}.
 
 -spec handle_type_provided(cowboy_req:req(), state()) ->
@@ -128,5 +150,9 @@ handle_type_accepted(Req, #state{operation_id = OperationID,
 handle_type_provided(Req, #state{operation_id = OperationID,
                                  provide_callback = Handler,
                                  context = Context} = State) ->
-    {Res, Req1, Context1} = Handler(getAuctions, OperationID, Req, Context),
+    Class = case OperationID of
+        'create_auction' -> 'createAuction';
+        _ -> 'getAuctions'
+    end,
+    {Res, Req1, Context1} = Handler(Class, OperationID, Req, Context),
     {Res, Req1, State#state{context = Context1}}.

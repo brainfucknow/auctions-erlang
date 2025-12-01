@@ -52,7 +52,7 @@ get_operations() ->
             base_path => "",
             path => "/auctions",
             method => <<"POST">>,
-            handler => 'openapi_create_auction_handler'
+            handler => 'openapi_get_auctions_handler'
         },
        'add_bid' => #{
             servers => [],

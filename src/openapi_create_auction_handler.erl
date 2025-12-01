@@ -88,7 +88,9 @@ valid_content_headers(Req, State) ->
 -spec content_types_provided(cowboy_req:req(), state()) ->
     {[{binary(), atom()}], cowboy_req:req(), state()}.
 content_types_provided(Req, #state{operation_id = 'create_auction'} = State) ->
-    {[], Req, State};
+    {[
+      {<<"application/json">>, handle_type_provided}
+     ], Req, State};
 content_types_provided(Req, State) ->
     {[], Req, State}.
 
