@@ -20,7 +20,7 @@ blind_auction_test() ->
     %% 2.5 Increment time but not yet ended
     StateRunning = blind_auction:inc(sample_ends_at() - 1, State2),
     %% Should still be running state (record state, not tuple {ended, ...})
-    ?assertMatch({state, _, _}, StateRunning),
+    ?assertMatch({state, _, _, _}, StateRunning),
 
     %% 3. End auction
     %% Haskell: S.inc sampleEndsAt stateWith2Bids
@@ -32,7 +32,7 @@ blind_auction_test() ->
     {ended, EndedState} = StateEnded,
     %% Check bids are present (order might matter depending on implementation, here we prepended)
     %% [bid2, bid1]
-    {ended_state, Bids, EndsAt} = EndedState,
+    {ended_state, _Type, Bids, EndsAt} = EndedState,
     ?assertEqual([bid2(), bid1()], Bids),
     ?assertEqual(sample_ends_at(), EndsAt),
 
