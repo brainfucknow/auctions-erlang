@@ -3,6 +3,7 @@
 -export([decode_auction_type/1, encode_auction_type/1]).
 -export([decode_user/1, encode_user/1]).
 -export([parse_amount/1, format_amount/1]).
+-export([decode_auction_req/1, decode_bid_req/1]).
 
 decode(Json) when is_binary(Json) ->
     try
@@ -135,3 +136,26 @@ parse_amount(Bin) ->
 
 format_amount({amount, Currency, Value}) ->
     iolist_to_binary([Currency, integer_to_binary(Value)]).
+
+decode_auction_req(Json) when is_binary(Json) ->
+    Map = json:decode(Json),
+    Id = maps:get(<<"id">>, Map),
+    StartsAt = maps:get(<<"startsAt">>, Map),
+    Title = maps:get(<<"title">>, Map),
+    EndsAt = maps:get(<<"endsAt">>, Map),
+    Currency = maps:get(<<"currency">>, Map, <<"VAC">>),
+    Type = case maps:get(<<"type">>, Map, undefined) of
+        undefined -> {english, 0, 0, 0};
+        T -> decode_auction_type(T)
+    end,
+    #{id => Id,
+      starts_at => StartsAt,
+      title => Title,
+      ends_at => EndsAt,
+      currency => Currency,
+      type => Type}.
+
+decode_bid_req(Json) when is_binary(Json) ->
+    Map = json:decode(Json),
+    Amount = maps:get(<<"amount">>, Map),
+    #{amount => Amount}.
