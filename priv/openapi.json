@@ -1,0 +1,399 @@
+{
+  "openapi" : "3.0.4",
+  "info" : {
+    "contact" : {
+      "email" : "wallymathieu@users.noreply.github.com",
+      "name" : "Oskar Gewalli",
+      "url" : "https://github.com/wallymathieu/auctions-api-csharp"
+    },
+    "description" : "Simple implementation of Auction API in C#<h4>Additional Information</h4><p> Informational version: 1.0.0+7564e74c16094a7aedec80c38dd83865b2efe8fd</p>",
+    "title" : "Auction API",
+    "version" : "1.0"
+  },
+  "servers" : [ {
+    "url" : "/"
+  } ],
+  "tags" : [ {
+    "name" : "CreateAuction"
+  }, {
+    "name" : "GetAuctions"
+  }, {
+    "name" : "CreateBid"
+  } ],
+  "paths" : {
+    "/auctions" : {
+      "get" : {
+        "description" : "Get a list of auctions.",
+        "operationId" : "get_auctions",
+        "parameters" : [ {
+          "explode" : false,
+          "in" : "header",
+          "name" : "x-api-version",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "style" : "simple"
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AuctionModel"
+                  },
+                  "type" : "array"
+                }
+              },
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AuctionModel"
+                  },
+                  "type" : "array"
+                }
+              },
+              "text/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/AuctionModel"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get all auctions",
+        "tags" : [ "GetAuctions" ]
+      },
+      "post" : {
+        "description" : "Create an auction. Note that the auction models are restricted to be a closed bid auction either as a\n[First price sealed bid auction](https://en.wikipedia.org/wiki/First-price_sealed-bid_auction) or a\n[Vickrey auction](https://en.wikipedia.org/wiki/Vickrey_auction). It can also be a\n[Timed ascending auction also known as an English auction](https://en.wikipedia.org/wiki/English_auction).",
+        "operationId" : "create_auction",
+        "parameters" : [ {
+          "explode" : false,
+          "in" : "header",
+          "name" : "x-api-version",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "style" : "simple"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateAuctionModel"
+              }
+            },
+            "text/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateAuctionModel"
+              }
+            },
+            "application/*+json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateAuctionModel"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          }
+        },
+        "summary" : "Create an auction",
+        "tags" : [ "CreateAuction" ]
+      }
+    },
+    "/auctions/{auctionId}/bids" : {
+      "post" : {
+        "operationId" : "add_bid",
+        "parameters" : [ {
+          "explode" : false,
+          "in" : "path",
+          "name" : "auctionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "style" : "simple"
+        }, {
+          "explode" : false,
+          "in" : "header",
+          "name" : "x-api-version",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "style" : "simple"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateBidModel"
+              }
+            },
+            "text/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateBidModel"
+              }
+            },
+            "application/*+json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateBidModel"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Errors"
+                }
+              },
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Errors"
+                }
+              },
+              "text/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Errors"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "404" : {
+            "description" : "Not Found"
+          }
+        },
+        "summary" : "Add a bid on an auction",
+        "tags" : [ "CreateBid" ]
+      }
+    },
+    "/auctions/{auctionId}" : {
+      "get" : {
+        "operationId" : "get_auction",
+        "parameters" : [ {
+          "explode" : false,
+          "in" : "path",
+          "name" : "auctionId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "style" : "simple"
+        }, {
+          "explode" : false,
+          "in" : "header",
+          "name" : "x-api-version",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "style" : "simple"
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuctionModel"
+                }
+              },
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuctionModel"
+                }
+              },
+              "text/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AuctionModel"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "summary" : "Get a single auction",
+        "tags" : [ "GetAuctions" ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "AuctionModel" : {
+        "additionalProperties" : false,
+        "description" : "Note that the Wallymathieu.Auctions.Api.Models.V1.AuctionModel.Seller is supposed to be seller description (for instance a nick chosen by the user).",
+        "example" : {
+          "seller" : "seller",
+          "winner" : "winner",
+          "hasEnded" : true,
+          "price" : 1,
+          "bids" : [ {
+            "amount" : 6,
+            "at" : "\"00:20:34\"",
+            "bidder" : "bidder"
+          }, {
+            "amount" : 6,
+            "at" : "\"00:20:34\"",
+            "bidder" : "bidder"
+          } ],
+          "startsAt" : "2000-01-23T04:56:07.000+00:00",
+          "currency" : "None",
+          "id" : 0,
+          "expiry" : "2000-01-23T04:56:07.000+00:00",
+          "title" : "title"
+        },
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "startsAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "title" : {
+            "nullable" : true,
+            "type" : "string"
+          },
+          "expiry" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "seller" : {
+            "nullable" : true,
+            "type" : "string"
+          },
+          "currency" : {
+            "$ref" : "#/components/schemas/CurrencyCode"
+          },
+          "bids" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BidModel"
+            },
+            "nullable" : true,
+            "type" : "array"
+          },
+          "price" : {
+            "format" : "int64",
+            "nullable" : true,
+            "type" : "integer"
+          },
+          "winner" : {
+            "nullable" : true,
+            "type" : "string"
+          },
+          "hasEnded" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "BidModel" : {
+        "additionalProperties" : false,
+        "description" : "Note that the Wallymathieu.Auctions.Api.Models.BidModel.Bidder is supposed to be a auction specific number or description.",
+        "example" : {
+          "amount" : 6,
+          "at" : "\"00:20:34\"",
+          "bidder" : "bidder"
+        },
+        "properties" : {
+          "amount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bidder" : {
+            "nullable" : true,
+            "type" : "string"
+          },
+          "at" : {
+            "example" : "\"00:20:34\"",
+            "format" : "^(\\d{2}:)?\\d{2}:\\d{2}:\\d{2}$",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CreateAuctionModel" : {
+        "additionalProperties" : false,
+        "description" : "This model is used to create an auction.",
+        "example" : {
+          "startsAt" : "2000-01-23T04:56:07.000+00:00",
+          "currency" : "None",
+          "title" : "title",
+          "type" : "type",
+          "endsAt" : "2000-01-23T04:56:07.000+00:00",
+          "open" : true
+        },
+        "properties" : {
+          "title" : {
+            "description" : "",
+            "nullable" : true,
+            "type" : "string"
+          },
+          "startsAt" : {
+            "description" : "",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "endsAt" : {
+            "description" : "",
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "currency" : {
+            "$ref" : "#/components/schemas/CurrencyCode"
+          },
+          "type" : {
+            "description" : "Is either nothing or \"English|{reservePrice}|{minRaise}|{timeFrame.Ticks}\", \"Blind\" or \"Vickrey\"",
+            "nullable" : true,
+            "type" : "string"
+          },
+          "open" : {
+            "description" : "If bidding should be done in the open",
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "CreateBidModel" : {
+        "additionalProperties" : false,
+        "description" : "Note that the Wallymathieu.Auctions.Commands.CreateBidCommand takes in an additional parameter that we want to include from the\nroute in our API instead of in the body.",
+        "example" : {
+          "amount" : 0
+        },
+        "properties" : {
+          "amount" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CurrencyCode" : {
+        "enum" : [ "None", "DKK", "SEK", "VAC" ],
+        "type" : "string"
+      },
+      "Errors" : {
+        "enum" : [ "None", "UnknownAuction", "AuctionAlreadyExists", "AuctionHasEnded", "AuctionHasNotStarted", "AuctionNotFound", "SellerCannotPlaceBids", "BidCurrencyConversion", "InvalidUserData", "MustPlaceBidOverHighestBid", "AlreadyPlacedBid", "MustRaiseWithAtLeast", "MustSpecifyAmount" ],
+        "type" : "string"
+      }
+    }
+  }
+}
