@@ -66,11 +66,25 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
         AuctionId ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
             try json:decode(Body) of
-                Bid ->
-                    case auction_store:add_bid(AuctionId, Bid) of
+                BidReq ->
+                    Amount = maps:get(<<"amount">>, BidReq),
+                    Headers = cowboy_req:headers(Req1),
+                    JwtPayloadBase64 = maps:get(<<"x-jwt-payload">>, Headers),
+                    JwtPayloadJson = base64:decode(JwtPayloadBase64),
+                    JwtPayload = json:decode(JwtPayloadJson),
+                    Bidder = maps:get(<<"name">>, JwtPayload),
+                    Time = calendar:system_time_to_rfc3339(os:system_time(millisecond), [{unit, millisecond}, {offset, "Z"}]),
+                    
+                    StoredBid = #{
+                        <<"bidder">> => Bidder,
+                        <<"amount">> => Amount,
+                        <<"time">> => list_to_binary(Time)
+                    },
+
+                    case auction_store:add_bid(AuctionId, StoredBid) of
                         ok ->
-                            ?LOG_INFO(#{what => "Bid added", auction_id => AuctionId, bid => Bid}),
-                            Req2 = cowboy_req:set_resp_body(Body, Req1),
+                            ?LOG_INFO(#{what => "Bid added", auction_id => AuctionId, bid => StoredBid}),
+                            Req2 = cowboy_req:set_resp_body(json:encode(StoredBid), Req1),
                             {true, Req2, Context};
                         {error, not_found} ->
                             Req2 = cowboy_req:reply(404, #{}, <<"Auction not found">>, Req1),
