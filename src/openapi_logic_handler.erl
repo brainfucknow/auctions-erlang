@@ -60,6 +60,30 @@ accept_callback('createAuction', 'create_auction', Req, Context) ->
         _:_ ->
             {false, Req1, Context}
     end;
+accept_callback('createBid', 'add_bid', Req, Context) ->
+    AuctionIdBin = cowboy_req:binding(auctionId, Req),
+    try binary_to_integer(AuctionIdBin) of
+        AuctionId ->
+            {ok, Body, Req1} = cowboy_req:read_body(Req),
+            try json:decode(Body) of
+                Bid ->
+                    case auction_store:add_bid(AuctionId, Bid) of
+                        ok ->
+                            ?LOG_INFO(#{what => "Bid added", auction_id => AuctionId, bid => Bid}),
+                            Req2 = cowboy_req:set_resp_body(Body, Req1),
+                            {true, Req2, Context};
+                        {error, not_found} ->
+                            Req2 = cowboy_req:reply(404, #{}, <<"Auction not found">>, Req1),
+                            {stop, Req2, Context}
+                    end
+            catch
+                _:_ ->
+                    {false, Req1, Context}
+            end
+    catch
+        _:_ ->
+             {false, Req, Context}
+    end;
 accept_callback(Class, OperationID, Req, Context) ->
     ?LOG_ERROR(#{what => "Got not implemented request to process",
                  class => Class,
