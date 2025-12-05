@@ -5,6 +5,7 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
+-define(DETS_TABLE, auction_store_dets).
 
 -record(auction_entry, {
     info :: map(),
@@ -30,11 +31,15 @@ get_auction(Id) ->
     gen_server:call(?SERVER, {get_auction, Id}).
 
 init([]) ->
-    {ok, #state{}}.
+    DetsFile = application:get_env(auctions, dets_file, "auction_store.dets"),
+    {ok, ?DETS_TABLE} = dets:open_file(?DETS_TABLE, [{file, DetsFile}, {type, set}]),
+    Auctions = dets:foldl(fun({Id, Entry}, Acc) -> maps:put(Id, Entry, Acc) end, #{}, ?DETS_TABLE),
+    {ok, #state{auctions = Auctions}}.
 
 handle_call({create_auction, Info, Mod, LogicState}, _From, State = #state{auctions = Auctions}) ->
     Id = maps:get(id, Info),
     Entry = #auction_entry{info = Info, logic_mod = Mod, logic_state = LogicState},
+    ok = dets:insert(?DETS_TABLE, {Id, Entry}),
     NewAuctions = maps:put(Id, Entry, Auctions),
     {reply, ok, State#state{auctions = NewAuctions}};
 
@@ -44,6 +49,7 @@ handle_call({add_bid, AuctionId, Bid}, _From, State = #state{auctions = Auctions
             case Mod:add_bid(Bid, LogicState) of
                 {NewLogicState, ok} ->
                     NewEntry = Entry#auction_entry{logic_state = NewLogicState},
+                    ok = dets:insert(?DETS_TABLE, {AuctionId, NewEntry}),
                     NewAuctions = maps:put(AuctionId, NewEntry, Auctions),
                     {reply, ok, State#state{auctions = NewAuctions}};
                 {_, {error, Reason}} ->
@@ -74,6 +80,7 @@ handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
+    dets:close(?DETS_TABLE),
     ok.
 
 code_change(_OldVsn, State, _Extra) ->
