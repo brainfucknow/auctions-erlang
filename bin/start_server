@@ -1,0 +1,2 @@
+#!/bin/bash
+rebar3 shell --eval 'application:ensure_all_started(openapi), openapi_server:start(http_server, #{transport => tcp, transport_opts => #{socket_opts => [{port, 8080}]}}).'

@@ -14,6 +14,7 @@ Simple implementation of Auction API in C#<h4>Additional Information</h4><p> Inf
                       logic_handler  => module()}) ->
     {ok, pid()} | {error, any()}.
 start(ID, Params) ->
+    auction_store:start_link(),
     Transport = maps:get(transport, Params, tcp),
     TransportOpts = maps:get(transport_opts, Params, #{}),
     ProtocolOpts = maps:get(procotol_opts, Params, #{}),

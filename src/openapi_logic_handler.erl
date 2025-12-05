@@ -48,6 +48,18 @@ api_key_callback(OperationID, ApiKey) ->
 
 -spec accept_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
     {accept_callback_return(), cowboy_req:req(), context()}.
+accept_callback('createAuction', 'create_auction', Req, Context) ->
+    {ok, Body, Req1} = cowboy_req:read_body(Req),
+    try json:decode(Body) of
+        Auction ->
+            auction_store:create_auction(Auction),
+            ?LOG_INFO(#{what => "Auction created", auction => Auction}),
+            Req2 = cowboy_req:set_resp_body(Body, Req1),
+            {true, Req2, Context}
+    catch
+        _:_ ->
+            {false, Req1, Context}
+    end;
 accept_callback(Class, OperationID, Req, Context) ->
     ?LOG_ERROR(#{what => "Got not implemented request to process",
                  class => Class,
@@ -58,6 +70,24 @@ accept_callback(Class, OperationID, Req, Context) ->
 
 -spec provide_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
     {cowboy_req:resp_body(), cowboy_req:req(), context()}.
+provide_callback('getAuctions', 'get_auctions', Req, Context) ->
+    Auctions = auction_store:get_auctions(),
+    Body = json:encode(Auctions),
+    {Body, Req, Context};
+provide_callback('getAuctions', 'get_auction', Req, Context) ->
+    AuctionIdBin = cowboy_req:binding(auctionId, Req),
+    try binary_to_integer(AuctionIdBin) of
+        AuctionId ->
+            case auction_store:get_auction(AuctionId) of
+                not_found ->
+                    {json:encode(null), Req, Context};
+                Auction ->
+                    {json:encode(Auction), Req, Context}
+            end
+    catch
+        _:_ ->
+            {json:encode(null), Req, Context}
+    end;
 provide_callback(Class, OperationID, Req, Context) ->
     ?LOG_ERROR(#{what => "Got not implemented request to process",
                  class => Class,
