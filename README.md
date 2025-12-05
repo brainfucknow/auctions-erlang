@@ -124,3 +124,12 @@ rebar.config
 To implement your own business logic, create a module called `http_server_logic` that implements the
 behaviour `openapi_logic_handler`. Refer to `openapi_logic_handler` documentation for details.
 
+## Running Tests
+
+To run the tests, use the following command:
+
+```bash
+rebar3 eunit
+```
+
+
