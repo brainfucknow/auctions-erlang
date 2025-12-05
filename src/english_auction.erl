@@ -1,5 +1,5 @@
 -module(english_auction).
--export([new/1, add_bid/2, inc/2, try_get_amount_and_winner/1, parse_options/1, format_options/1]).
+-export([new/1, add_bid/2, inc/2, try_get_amount_and_winner/1, parse_options/1, format_options/1, get_bids/1]).
 
 -record(options, {
     min_bid = 0 :: integer(),
@@ -64,6 +64,9 @@ try_get_amount_and_winner({ended, #ended_state{bids = [#{amount := Amount, user 
     {ok, {Amount, User}};
 try_get_amount_and_winner(_) ->
     undefined.
+
+get_bids(#state{bids = Bids}) -> Bids;
+get_bids({ended, #ended_state{bids = Bids}}) -> Bids.
 
 -spec parse_options(string()) -> options().
 parse_options(String) ->

@@ -50,10 +50,23 @@ api_key_callback(OperationID, ApiKey) ->
     {accept_callback_return(), cowboy_req:req(), context()}.
 accept_callback('createAuction', 'create_auction', Req, Context) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
-    try json:decode(Body) of
-        Auction ->
-            auction_store:create_auction(Auction),
-            ?LOG_INFO(#{what => "Auction created", auction => Auction}),
+    try auction_serialization:decode_auction_req(Body) of
+        AuctionReq ->
+            #{id := _Id, ends_at := EndsAtBin, type := Type} = AuctionReq,
+            EndsAtMs = calendar:rfc3339_to_system_time(binary_to_list(EndsAtBin), [{unit, millisecond}]),
+            
+            {LogicMod, LogicState} = case Type of
+                {english, _Min, _Reserve, _Inc} ->
+                    OptionsBin = auction_serialization:encode_auction_type(Type),
+                    {english_auction, english_auction:new(#{ends_at => EndsAtMs, options => OptionsBin})};
+                blind ->
+                    {blind_auction, blind_auction:new(#{ends_at => EndsAtMs, type => blind})};
+                vickrey ->
+                    {blind_auction, blind_auction:new(#{ends_at => EndsAtMs, type => vickrey})}
+            end,
+
+            auction_store:create_auction(AuctionReq, LogicMod, LogicState),
+            ?LOG_INFO(#{what => "Auction created", auction => AuctionReq}),
             Req2 = cowboy_req:set_resp_body(Body, Req1),
             {true, Req2, Context}
     catch
@@ -65,9 +78,8 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
     try binary_to_integer(AuctionIdBin) of
         AuctionId ->
             {ok, Body, Req1} = cowboy_req:read_body(Req),
-            try json:decode(Body) of
-                BidReq ->
-                    Amount = maps:get(<<"amount">>, BidReq),
+            try auction_serialization:decode_bid_req(Body) of
+                #{amount := Amount} ->
                     Headers = cowboy_req:headers(Req1),
                     JwtPayloadBase64 = maps:get(<<"x-jwt-payload">>, Headers),
                     JwtPayloadJson = base64:decode(JwtPayloadBase64),
@@ -76,18 +88,26 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
                     Time = calendar:system_time_to_rfc3339(os:system_time(millisecond), [{unit, millisecond}, {offset, "Z"}]),
                     
                     StoredBid = #{
-                        <<"bidder">> => Bidder,
-                        <<"amount">> => Amount,
-                        <<"time">> => list_to_binary(Time)
+                        user => Bidder,
+                        amount => Amount,
+                        time => list_to_binary(Time)
                     },
 
                     case auction_store:add_bid(AuctionId, StoredBid) of
                         ok ->
                             ?LOG_INFO(#{what => "Bid added", auction_id => AuctionId, bid => StoredBid}),
-                            Req2 = cowboy_req:set_resp_body(json:encode(StoredBid), Req1),
+                            RespBid = #{
+                                <<"amount">> => Amount,
+                                <<"bidder">> => Bidder,
+                                <<"at">> => list_to_binary(Time)
+                            },
+                            Req2 = cowboy_req:set_resp_body(json:encode(RespBid), Req1),
                             {true, Req2, Context};
                         {error, not_found} ->
                             Req2 = cowboy_req:reply(404, #{}, <<"Auction not found">>, Req1),
+                            {stop, Req2, Context};
+                        {error, Reason} ->
+                            Req2 = cowboy_req:reply(400, #{}, list_to_binary(io_lib:format("~p", [Reason])), Req1),
                             {stop, Req2, Context}
                     end
             catch

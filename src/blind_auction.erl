@@ -1,5 +1,5 @@
 -module(blind_auction).
--export([new/1, add_bid/2, inc/2, try_get_amount_and_winner/1]).
+-export([new/1, add_bid/2, inc/2, try_get_amount_and_winner/1, get_bids/1]).
 
 -record(state, {
     type = blind :: atom(),
@@ -52,3 +52,6 @@ try_get_amount_and_winner({ended, #ended_state{bids = Bids, type = Type}}) ->
     end;
 try_get_amount_and_winner(_) ->
     undefined.
+
+get_bids(#state{bids = Bids}) -> Bids;
+get_bids({ended, #ended_state{bids = Bids}}) -> Bids.

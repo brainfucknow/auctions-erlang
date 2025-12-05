@@ -1,18 +1,24 @@
 -module(auction_store).
 -behaviour(gen_server).
 
--export([start_link/0, create_auction/1, get_auctions/0, get_auction/1, add_bid/2]).
+-export([start_link/0, create_auction/3, get_auctions/0, get_auction/1, add_bid/2]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 -define(SERVER, ?MODULE).
 
--record(state, {auctions = #{}}).
+-record(auction_entry, {
+    info :: map(),
+    logic_mod :: atom(),
+    logic_state :: term()
+}).
+
+-record(state, {auctions = #{} :: #{integer() => #auction_entry{}}}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
-create_auction(Auction) ->
-    gen_server:call(?SERVER, {create_auction, Auction}).
+create_auction(Info, Mod, LogicState) ->
+    gen_server:call(?SERVER, {create_auction, Info, Mod, LogicState}).
 
 add_bid(AuctionId, Bid) ->
     gen_server:call(?SERVER, {add_bid, AuctionId, Bid}).
@@ -26,28 +32,36 @@ get_auction(Id) ->
 init([]) ->
     {ok, #state{}}.
 
-handle_call({create_auction, Auction}, _From, State = #state{auctions = Auctions}) ->
-    Id = maps:get(<<"id">>, Auction),
-    NewAuctions = maps:put(Id, Auction, Auctions),
+handle_call({create_auction, Info, Mod, LogicState}, _From, State = #state{auctions = Auctions}) ->
+    Id = maps:get(id, Info),
+    Entry = #auction_entry{info = Info, logic_mod = Mod, logic_state = LogicState},
+    NewAuctions = maps:put(Id, Entry, Auctions),
     {reply, ok, State#state{auctions = NewAuctions}};
 
 handle_call({add_bid, AuctionId, Bid}, _From, State = #state{auctions = Auctions}) ->
     case maps:find(AuctionId, Auctions) of
-        {ok, Auction} ->
-            Bids = maps:get(<<"bids">>, Auction, []),
-            NewBids = [Bid | Bids],
-            NewAuction = maps:put(<<"bids">>, NewBids, Auction),
-            NewAuctions = maps:put(AuctionId, NewAuction, Auctions),
-            {reply, ok, State#state{auctions = NewAuctions}};
+        {ok, Entry = #auction_entry{logic_mod = Mod, logic_state = LogicState}} ->
+            case Mod:add_bid(Bid, LogicState) of
+                {NewLogicState, ok} ->
+                    NewEntry = Entry#auction_entry{logic_state = NewLogicState},
+                    NewAuctions = maps:put(AuctionId, NewEntry, Auctions),
+                    {reply, ok, State#state{auctions = NewAuctions}};
+                {_, {error, Reason}} ->
+                    {reply, {error, Reason}, State}
+            end;
         error ->
             {reply, {error, not_found}, State}
     end;
 
 handle_call(get_auctions, _From, State = #state{auctions = Auctions}) ->
-    {reply, maps:values(Auctions), State};
+    Result = [format_auction(Entry) || Entry <- maps:values(Auctions)],
+    {reply, Result, State};
 
 handle_call({get_auction, Id}, _From, State = #state{auctions = Auctions}) ->
-    Reply = maps:get(Id, Auctions, not_found),
+    Reply = case maps:find(Id, Auctions) of
+        {ok, Entry} -> format_auction(Entry);
+        error -> not_found
+    end,
     {reply, Reply, State};
 
 handle_call(_Request, _From, State) ->
@@ -64,3 +78,38 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+format_auction(#auction_entry{info = Info, logic_mod = Mod, logic_state = LogicState}) ->
+    %% Reconstruct the auction map for the API
+    %% We need to extract bids and winner from LogicState
+    Bids = Mod:get_bids(LogicState),
+    WinnerInfo = case Mod:try_get_amount_and_winner(LogicState) of
+        {ok, {Amount, Winner}} -> #{currentBid => Amount, winner => Winner};
+        undefined -> #{}
+    end,
+    
+    %% Convert Info keys back to binaries if needed? 
+    %% The API handlers seem to expect maps that can be encoded to JSON.
+    %% json:encode works with atom keys too.
+    %% But we need to match the AuctionModel structure.
+    
+    Base = #{
+        <<"id">> => maps:get(id, Info),
+        <<"title">> => maps:get(title, Info),
+        <<"startsAt">> => maps:get(starts_at, Info),
+        <<"endsAt">> => maps:get(ends_at, Info),
+        <<"currency">> => maps:get(currency, Info),
+        <<"type">> => auction_serialization:encode_auction_type(maps:get(type, Info)),
+        <<"bids">> => [format_bid(B) || B <- Bids]
+    },
+    maps:merge(Base, WinnerInfo).
+
+format_bid(Bid) ->
+    %% Bid is #{amount => ..., user => ..., time => ...}
+    %% API expects BidModel: amount, bidder, at
+    #{
+        <<"amount">> => maps:get(amount, Bid),
+        <<"bidder">> => maps:get(user, Bid),
+        <<"at">> => maps:get(time, Bid)
+    }.
+
