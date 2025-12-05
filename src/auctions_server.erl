@@ -1,9 +1,9 @@
--module(openapi_server).
+-module(auctions_server).
 -moduledoc """
 Simple implementation of Auction API in C#<h4>Additional Information</h4><p> Informational version: 1.0.0+7564e74c16094a7aedec80c38dd83865b2efe8fd</p>
 """.
 
--define(DEFAULT_LOGIC_HANDLER, openapi_logic_handler).
+-define(DEFAULT_LOGIC_HANDLER, auctions_logic_handler).
 
 -export([start/2]).
 -ignore_xref([start/2]).
@@ -40,7 +40,7 @@ get_cowboy_config(Key, Value, AccIn) ->
     AccIn#{Key => Value}.
 
 get_default_dispatch(LogicHandler) ->
-    Paths = openapi_router:get_paths(LogicHandler),
+    Paths = auctions_router:get_paths(LogicHandler),
     #{dispatch => cowboy_router:compile(Paths)}.
 
 get_default_opts(LogicHandler) ->

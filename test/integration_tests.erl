@@ -9,20 +9,20 @@ start_app() ->
     application:ensure_all_started(ranch),
     application:ensure_all_started(cowboy),
     application:ensure_all_started(jesse),
-    application:load(openapi),
+    application:load(auctions),
     
     %% Start the API server with REAL logic handler
     Port = 0,
-    {ok, _Pid} = openapi_server:start(integration_test_listener, #{
+    {ok, _Pid} = auctions_server:start(integration_test_listener, #{
         transport => tcp,
         transport_opts => #{socket_opts => [{port, Port}]},
-        logic_handler => openapi_logic_handler
+        logic_handler => auctions_logic_handler
     }),
     ranch:get_port(integration_test_listener).
 
 stop_app() ->
     cowboy:stop_listener(integration_test_listener),
-    %% Stop auction_store if it was started by openapi_server
+    %% Stop auction_store if it was started by auctions_server
     catch gen_server:stop(auction_store).
 
 integration_test_() ->

@@ -1,4 +1,4 @@
--module(openapi_logic_handler).
+-module(auctions_logic_handler).
 
 -include_lib("kernel/include/logger.hrl").
 
@@ -12,12 +12,12 @@
         stop
         | cowboy_req:resp_body().
 -type api_key_callback() ::
-    fun((openapi_api:operation_id(), binary()) -> {true, context()} | {false, iodata()}).
+    fun((auctions_api:operation_id(), binary()) -> {true, context()} | {false, iodata()}).
 -type accept_callback() ::
-    fun((openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+    fun((auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
             {accept_callback_return(), cowboy_req:req(), context()}).
 -type provide_callback() ::
-    fun((openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+    fun((auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
             {cowboy_req:resp_body(), cowboy_req:req(), context()}).
 -type context() :: #{_ := _}.
 
@@ -27,26 +27,26 @@
 
 -optional_callbacks([api_key_callback/2]).
 
--callback api_key_callback(openapi_api:operation_id(), binary()) ->
+-callback api_key_callback(auctions_api:operation_id(), binary()) ->
     {true, context()} | {false, iodata()}.
 
--callback accept_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+-callback accept_callback(auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
     {accept_callback_return(), cowboy_req:req(), context()}.
 
--callback provide_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+-callback provide_callback(auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
     {provide_callback_return(), cowboy_req:req(), context()}.
 
 -export([api_key_callback/2, accept_callback/4, provide_callback/4]).
 -ignore_xref([api_key_callback/2, accept_callback/4, provide_callback/4]).
 
--spec api_key_callback(openapi_api:operation_id(), binary()) -> {true, #{}}.
+-spec api_key_callback(auctions_api:operation_id(), binary()) -> {true, #{}}.
 api_key_callback(OperationID, ApiKey) ->
     ?LOG_ERROR(#{what => "Got not implemented api_key_callback request",
                  operation_id => OperationID,
                  api_key => ApiKey}),
     {true, #{}}.
 
--spec accept_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+-spec accept_callback(auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
     {accept_callback_return(), cowboy_req:req(), context()}.
 accept_callback('createAuction', 'create_auction', Req, Context) ->
     {ok, Body, Req1} = cowboy_req:read_body(Req),
@@ -126,7 +126,7 @@ accept_callback(Class, OperationID, Req, Context) ->
                  context => Context}),
     {false, Req, Context}.
 
--spec provide_callback(openapi_api:class(), openapi_api:operation_id(), cowboy_req:req(), context()) ->
+-spec provide_callback(auctions_api:class(), auctions_api:operation_id(), cowboy_req:req(), context()) ->
     {cowboy_req:resp_body(), cowboy_req:req(), context()}.
 provide_callback('getAuctions', 'get_auctions', Req, Context) ->
     Auctions = auction_store:get_auctions(),

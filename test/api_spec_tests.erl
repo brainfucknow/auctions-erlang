@@ -9,7 +9,7 @@ start_app() ->
     application:ensure_all_started(ranch),
     application:ensure_all_started(cowboy),
     application:ensure_all_started(jesse),
-    application:load(openapi),
+    application:load(auctions),
     
     %% Start the logic handler mock
     test_logic_handler:start_link(),
@@ -17,7 +17,7 @@ start_app() ->
 
     %% Start the API server
     Port = 0, %% Random port
-    {ok, _Pid} = openapi_server:start(api_test_listener, #{
+    {ok, _Pid} = auctions_server:start(api_test_listener, #{
         transport => tcp,
         transport_opts => #{socket_opts => [{port, Port}]},
         logic_handler => test_logic_handler

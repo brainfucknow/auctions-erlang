@@ -1,5 +1,5 @@
 -module(test_logic_handler).
--behaviour(openapi_logic_handler).
+-behaviour(auctions_logic_handler).
 
 -export([accept_callback/4, provide_callback/4, api_key_callback/2]).
 -export([start_link/0, stop/0, reset/0]).
@@ -22,14 +22,14 @@ stop() ->
 reset() ->
     gen_server:call(?MODULE, reset).
 
-%% openapi_logic_handler callbacks
+%% auctions_logic_handler callbacks
 
 api_key_callback(_OperationID, _ApiKey) ->
     {true, #{}}.
 
 accept_callback('createAuction', 'create_auction', Req, Context) ->
-    ValidatorState = openapi_api:prepare_validator(),
-    case openapi_api:populate_request('create_auction', Req, ValidatorState) of
+    ValidatorState = auctions_api:prepare_validator(),
+    case auctions_api:populate_request('create_auction', Req, ValidatorState) of
         {ok, Model, Req1} ->
             AuctionReq = maps:get('CreateAuctionModel', Model),
             case gen_server:call(?MODULE, {create_auction, AuctionReq}) of
@@ -52,8 +52,8 @@ accept_callback('createAuction', 'create_auction', Req, Context) ->
     end;
 
 accept_callback('createBid', 'add_bid', Req, Context) ->
-    ValidatorState = openapi_api:prepare_validator(),
-    case openapi_api:populate_request('add_bid', Req, ValidatorState) of
+    ValidatorState = auctions_api:prepare_validator(),
+    case auctions_api:populate_request('add_bid', Req, ValidatorState) of
         {ok, Model, Req1} ->
             AuctionId = maps:get('auctionId', Model),
             BidReq = maps:get('CreateBidModel', Model),
@@ -62,7 +62,7 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
             %% The bid request in Haskell spec is {"amount":11}.
             %% The response is BidAccepted event.
             
-            %% We need to get the user from the header manually since openapi_auth is bypassed
+            %% We need to get the user from the header manually since auctions_auth is bypassed
             Headers = cowboy_req:headers(Req1),
             User = case maps:get(<<"x-jwt-payload">>, Headers, undefined) of
                 undefined -> <<"unknown">>;
@@ -101,18 +101,18 @@ provide_callback('getAuctions', 'get_auctions', Req, Context) ->
     {RespBody, Req, Context};
 
 provide_callback('createAuction', 'get_auction', Req, Context) ->
-    %% Note: 'createAuction' class is used for get_auction in openapi_router?
-    %% Let's check openapi_router.erl.
-    %% get_auction handler is openapi_get_auctions_handler.
-    %% openapi_get_auctions_handler uses class 'getAuctions' (likely).
-    %% Wait, openapi_get_auctions_handler.erl says: -type class() :: 'getAuctions'.
+    %% Note: 'createAuction' class is used for get_auction in auctions_router?
+    %% Let's check auctions_router.erl.
+    %% get_auction handler is auctions_get_auctions_handler.
+    %% auctions_get_auctions_handler uses class 'getAuctions' (likely).
+    %% Wait, auctions_get_auctions_handler.erl says: -type class() :: 'getAuctions'.
     %% So this clause might be wrong if I use 'createAuction'.
     %% But let's implement for 'getAuctions'.
     provide_callback('getAuctions', 'get_auction', Req, Context);
 
 provide_callback('getAuctions', 'get_auction', Req, Context) ->
-    ValidatorState = openapi_api:prepare_validator(),
-    case openapi_api:populate_request('get_auction', Req, ValidatorState) of
+    ValidatorState = auctions_api:prepare_validator(),
+    case auctions_api:populate_request('get_auction', Req, ValidatorState) of
         {ok, Model, Req1} ->
             AuctionId = maps:get('auctionId', Model),
             case gen_server:call(?MODULE, {get_auction, AuctionId}) of
@@ -123,7 +123,7 @@ provide_callback('getAuctions', 'get_auction', Req, Context) ->
                     %% Cowboy REST doesn't easily support 404 in provide_callback without some tricks
                     %% or returning empty body and setting response code manually?
                     %% Actually, if resource doesn't exist, we should have returned false in resource_exists.
-                    %% But openapi handlers are generated to return true.
+                    %% But auctions handlers are generated to return true.
                     %% So we have to handle it here.
                     Req2 = cowboy_req:reply(404, #{}, <<"\"Auction not found\"">>, Req1),
                     {stop, Req2, Context}

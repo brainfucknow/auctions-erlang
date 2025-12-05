@@ -1,13 +1,13 @@
--module(openapi_auth).
+-module(auctions_auth).
 
 -export([authorize_api_key/5]).
 
--spec authorize_api_key(openapi_logic_handler:api_key_callback(),
-                        openapi_api:operation_id(),
+-spec authorize_api_key(auctions_logic_handler:api_key_callback(),
+                        auctions_api:operation_id(),
                         header | qs_val,
                         iodata() | atom(),
                         cowboy_req:req()) ->
-    {true, openapi_logic_handler:context(), cowboy_req:req()} |
+    {true, auctions_logic_handler:context(), cowboy_req:req()} |
     {false, binary(), cowboy_req:req()}.
 authorize_api_key(Handler, OperationID, From, KeyParam, Req0) ->
     {ApiKey, Req} = get_api_key(From, KeyParam, Req0),

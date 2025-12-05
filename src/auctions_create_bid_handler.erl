@@ -1,4 +1,4 @@
--module(openapi_create_bid_handler).
+-module(auctions_create_bid_handler).
 -moduledoc """
 Exposes the following operation IDs:
 
@@ -34,14 +34,14 @@ Add a bid on an auction.
 
 -record(state,
         {operation_id :: operation_id(),
-         accept_callback :: openapi_logic_handler:accept_callback(),
-         provide_callback :: openapi_logic_handler:provide_callback(),
-         api_key_callback :: openapi_logic_handler:api_key_callback(),
-         context = #{} :: openapi_logic_handler:context()}).
+         accept_callback :: auctions_logic_handler:accept_callback(),
+         provide_callback :: auctions_logic_handler:provide_callback(),
+         api_key_callback :: auctions_logic_handler:api_key_callback(),
+         context = #{} :: auctions_logic_handler:context()}).
 
 -type state() :: #state{}.
 
--spec init(cowboy_req:req(), openapi_router:init_opts()) ->
+-spec init(cowboy_req:req(), auctions_router:init_opts()) ->
     {cowboy_rest, cowboy_req:req(), state()}.
 init(Req, {Operations, Module}) ->
     Method = cowboy_req:method(Req),
@@ -103,7 +103,7 @@ delete_resource(Req, State) ->
     {true =:= Res, Req1, State1}.
 
 -spec handle_type_accepted(cowboy_req:req(), state()) ->
-    { openapi_logic_handler:accept_callback_return(), cowboy_req:req(), state()}.
+    { auctions_logic_handler:accept_callback_return(), cowboy_req:req(), state()}.
 handle_type_accepted(Req, #state{operation_id = OperationID,
                                  accept_callback = Handler,
                                  context = Context} = State) ->
@@ -111,7 +111,7 @@ handle_type_accepted(Req, #state{operation_id = OperationID,
     {Res, Req1, State#state{context = Context1}}.
 
 -spec handle_type_provided(cowboy_req:req(), state()) ->
-    { openapi_logic_handler:provide_callback_return(), cowboy_req:req(), state()}.
+    { auctions_logic_handler:provide_callback_return(), cowboy_req:req(), state()}.
 handle_type_provided(Req, #state{operation_id = OperationID,
                                  provide_callback = Handler,
                                  context = Context} = State) ->

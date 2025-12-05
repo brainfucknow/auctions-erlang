@@ -1,9 +1,9 @@
--module(openapi_router).
+-module(auctions_router).
 
 -export([get_paths/1]).
 
 -type method() :: binary().
--type operations() :: #{method() => openapi_api:operation_id()}.
+-type operations() :: #{method() => auctions_api:operation_id()}.
 -type init_opts()  :: {operations(), module()}.
 
 -export_type([init_opts/0]).
@@ -52,27 +52,27 @@ get_operations() ->
             base_path => "",
             path => "/auctions",
             method => <<"POST">>,
-            handler => 'openapi_get_auctions_handler'
+            handler => 'auctions_get_auctions_handler'
         },
        'add_bid' => #{
             servers => [],
             base_path => "",
             path => "/auctions/:auctionId/bids",
             method => <<"POST">>,
-            handler => 'openapi_create_bid_handler'
+            handler => 'auctions_create_bid_handler'
         },
        'get_auction' => #{
             servers => [],
             base_path => "",
             path => "/auctions/:auctionId",
             method => <<"GET">>,
-            handler => 'openapi_get_auctions_handler'
+            handler => 'auctions_get_auctions_handler'
         },
        'get_auctions' => #{
             servers => [],
             base_path => "",
             path => "/auctions",
             method => <<"GET">>,
-            handler => 'openapi_get_auctions_handler'
+            handler => 'auctions_get_auctions_handler'
         }
     }.

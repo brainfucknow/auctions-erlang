@@ -1,4 +1,4 @@
--module(openapi_api).
+-module(auctions_api).
 -moduledoc """
 This module offers an API for JSON schema validation, using `jesse` under the hood.
 
@@ -9,16 +9,16 @@ and `validate_response/4` respectively.
 For example, the user-defined `Module:accept_callback/4` can be implemented as follows:
 ```
 -spec accept_callback(
-        Class :: openapi_api:class(),
-        OperationID :: openapi_api:operation_id(),
+        Class :: auctions_api:class(),
+        OperationID :: auctions_api:operation_id(),
         Req :: cowboy_req:req(),
-        Context :: openapi_logic_handler:context()) ->
-    {openapi_logic_handler:accept_callback_return(),
+        Context :: auctions_logic_handler:context()) ->
+    {auctions_logic_handler:accept_callback_return(),
      cowboy_req:req(),
-     openapi_logic_handler:context()}.
+     auctions_logic_handler:context()}.
 accept_callback(Class, OperationID, Req0, Context0) ->
-    ValidatorState = openapi_api:prepare_validator(),
-    case openapi_api:populate_request(OperationID, Req0, ValidatorState) of
+    ValidatorState = auctions_api:prepare_validator(),
+    case auctions_api:populate_request(OperationID, Req0, ValidatorState) of
         {ok, Model, Req1} ->
             Context1 = maps:merge(Context0, Model),
             case do_accept_callback(Class, OperationID, Req1, Context1) of
@@ -92,7 +92,7 @@ prepare_validator() ->
 -doc #{equiv => prepare_validator/2}.
 -spec prepare_validator(binary()) -> jesse_state:state().
 prepare_validator(SchemaVer) ->
-    prepare_validator(get_openapi_path(), SchemaVer).
+    prepare_validator(get_auctions_path(), SchemaVer).
 
 -doc """
 Loads the JSON schema and the desired validation draft into a `t:jesse_state:state/0`.
@@ -488,9 +488,9 @@ get_opt(Key, Opts, Default) ->
         false -> Default
     end.
 
-get_openapi_path() ->
+get_auctions_path() ->
     {ok, AppName} = application:get_application(?MODULE),
-    filename:join(priv_dir(AppName), "openapi.json").
+    filename:join(priv_dir(AppName), "auctions.json").
 
 -include_lib("kernel/include/file.hrl").
 
