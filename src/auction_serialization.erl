@@ -161,9 +161,11 @@ read_jsonl(Filename) ->
 
 parse_amount(Bin) ->
     case re:run(Bin, "^([A-Z]+)([0-9]+)$", [{capture, all_but_first, binary}]) of
-        {match, [Currency, AmountStr]} ->
+        {match, [Currency, AmountStr]} when is_binary(Currency), is_binary(AmountStr) ->
             {ok, {amount, Currency, binary_to_integer(AmountStr)}};
         nomatch ->
+            {error, invalid_amount_format};
+        _ ->
             {error, invalid_amount_format}
     end.
 
@@ -171,7 +173,11 @@ format_amount({amount, Currency, Value}) ->
     iolist_to_binary([Currency, integer_to_binary(Value)]).
 
 decode_auction_req(Json) when is_binary(Json) ->
-    Map = json:decode(Json),
+    DecodedValue = json:decode(Json),
+    Map = case DecodedValue of
+        M when is_map(M) -> M;
+        _ -> error(invalid_json_object)
+    end,
     Id = maps:get(<<"id">>, Map),
     StartsAt = maps:get(<<"startsAt">>, Map),
     Title = maps:get(<<"title">>, Map),
@@ -192,6 +198,10 @@ decode_auction_req(Json) when is_binary(Json) ->
     }.
 
 decode_bid_req(Json) when is_binary(Json) ->
-    Map = json:decode(Json),
+    DecodedValue = json:decode(Json),
+    Map = case DecodedValue of
+        M when is_map(M) -> M;
+        _ -> error(invalid_json_object)
+    end,
     Amount = maps:get(<<"amount">>, Map),
     #{amount => Amount}.
