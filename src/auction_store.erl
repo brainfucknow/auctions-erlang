@@ -42,7 +42,6 @@ handle_call({create_auction, Info, Mod, LogicState}, _From, State = #state{aucti
     ok = dets:insert(?DETS_TABLE, {Id, Entry}),
     NewAuctions = maps:put(Id, Entry, Auctions),
     {reply, ok, State#state{auctions = NewAuctions}};
-
 handle_call({add_bid, AuctionId, Bid}, _From, State = #state{auctions = Auctions}) ->
     case maps:find(AuctionId, Auctions) of
         {ok, Entry = #auction_entry{logic_mod = Mod, logic_state = LogicState}} ->
@@ -63,18 +62,18 @@ handle_call({add_bid, AuctionId, Bid}, _From, State = #state{auctions = Auctions
         error ->
             {reply, {error, not_found}, State}
     end;
-
 handle_call(get_auctions, _From, State = #state{auctions = Auctions}) ->
     Result = [format_auction(Entry) || Entry <- maps:values(Auctions)],
     {reply, Result, State};
-
 handle_call({get_auction, Id}, _From, State = #state{auctions = Auctions}) ->
-    Reply = case maps:find(Id, Auctions) of
-        {ok, Entry} -> format_auction(Entry);
-        error -> not_found
-    end,
+    Reply =
+        case Auctions of
+       #{Id := Entry} ->
+           format_auction(Entry);
+       #{} ->
+           not_found
+   end,
     {reply, Reply, State};
-
 handle_call(_Request, _From, State) ->
     {reply, ignored, State}.
 
@@ -95,16 +94,17 @@ format_auction(#auction_entry{info = Info, logic_mod = Mod, logic_state = LogicS
     %% Reconstruct the auction map for the API
     %% We need to extract bids and winner from LogicState
     Bids = Mod:get_bids(LogicState),
-    WinnerInfo = case Mod:try_get_amount_and_winner(LogicState) of
-        {ok, {Amount, Winner}} -> #{currentBid => Amount, winner => Winner};
-        undefined -> #{}
-    end,
-    
-    %% Convert Info keys back to binaries if needed? 
+    WinnerInfo =
+        case Mod:try_get_amount_and_winner(LogicState) of
+            {ok, {Amount, Winner}} -> #{currentBid => Amount, winner => Winner};
+            undefined -> #{}
+        end,
+
+    %% Convert Info keys back to binaries if needed?
     %% The API handlers seem to expect maps that can be encoded to JSON.
     %% json:encode works with atom keys too.
     %% But we need to match the AuctionModel structure.
-    
+
     Base = #{
         <<"id">> => maps:get(id, Info),
         <<"title">> => maps:get(title, Info),
@@ -124,4 +124,3 @@ format_bid(Bid) ->
         <<"bidder">> => maps:get(user, Bid),
         <<"at">> => maps:get(time, Bid)
     }.
-

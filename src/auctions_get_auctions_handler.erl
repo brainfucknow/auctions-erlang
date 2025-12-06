@@ -36,17 +36,20 @@ Create an auction.
 -type class() :: 'getAuctions' | 'createAuction'.
 
 -type operation_id() ::
-    'get_auction' %% Get a single auction
-    | 'get_auctions' %% Get all auctions
-    | 'create_auction'. %% Create an auction
+    %% Get a single auction
+    'get_auction'
+    %% Get all auctions
+    | 'get_auctions'
+    %% Create an auction
+    | 'create_auction'.
 
-
--record(state,
-        {operation_id :: operation_id(),
-         accept_callback :: auctions_logic_handler:accept_callback(),
-         provide_callback :: auctions_logic_handler:provide_callback(),
-         api_key_callback :: auctions_logic_handler:api_key_callback(),
-         context = #{} :: auctions_logic_handler:context()}).
+-record(state, {
+    operation_id :: operation_id(),
+    accept_callback :: auctions_logic_handler:accept_callback(),
+    provide_callback :: auctions_logic_handler:provide_callback(),
+    api_key_callback :: auctions_logic_handler:api_key_callback(),
+    context = #{} :: auctions_logic_handler:context()
+}).
 
 -type state() :: #state{}.
 
@@ -55,13 +58,17 @@ Create an auction.
 init(Req, {Operations, Module}) ->
     Method = cowboy_req:method(Req),
     OperationID = maps:get(Method, Operations, undefined),
-    ?LOG_INFO(#{what => "Attempt to process operation",
-                method => Method,
-                operation_id => OperationID}),
-    State = #state{operation_id = OperationID,
-                   accept_callback = fun Module:accept_callback/4,
-                   provide_callback = fun Module:provide_callback/4,
-                   api_key_callback = fun Module:api_key_callback/2},
+    ?LOG_INFO(#{
+        what => "Attempt to process operation",
+        method => Method,
+        operation_id => OperationID
+    }),
+    State = #state{
+        operation_id = OperationID,
+        accept_callback = fun Module:accept_callback/4,
+        provide_callback = fun Module:provide_callback/4,
+        api_key_callback = fun Module:api_key_callback/2
+    },
     {cowboy_rest, Req, State}.
 
 -spec allowed_methods(cowboy_req:req(), state()) ->
@@ -83,11 +90,15 @@ is_authorized(Req, State) ->
 -spec content_types_accepted(cowboy_req:req(), state()) ->
     {[{binary(), atom()}], cowboy_req:req(), state()}.
 content_types_accepted(Req, #state{operation_id = 'create_auction'} = State) ->
-    {[
-      {<<"application/json">>, handle_type_accepted},
-      {<<"text/json">>, handle_type_accepted},
-      {<<"application/*+json">>, handle_type_accepted}
-     ], Req, State};
+    {
+        [
+            {<<"application/json">>, handle_type_accepted},
+            {<<"text/json">>, handle_type_accepted},
+            {<<"application/*+json">>, handle_type_accepted}
+        ],
+        Req,
+        State
+    };
 content_types_accepted(Req, #state{operation_id = 'get_auction'} = State) ->
     {[], Req, State};
 content_types_accepted(Req, #state{operation_id = 'get_auctions'} = State) ->
@@ -109,21 +120,33 @@ valid_content_headers(Req, State) ->
 -spec content_types_provided(cowboy_req:req(), state()) ->
     {[{binary(), atom()}], cowboy_req:req(), state()}.
 content_types_provided(Req, #state{operation_id = 'create_auction'} = State) ->
-    {[
-      {<<"application/json">>, handle_type_provided}
-     ], Req, State};
+    {
+        [
+            {<<"application/json">>, handle_type_provided}
+        ],
+        Req,
+        State
+    };
 content_types_provided(Req, #state{operation_id = 'get_auction'} = State) ->
-    {[
-      {<<"text/plain">>, handle_type_provided},
-      {<<"application/json">>, handle_type_provided},
-      {<<"text/json">>, handle_type_provided}
-     ], Req, State};
+    {
+        [
+            {<<"text/plain">>, handle_type_provided},
+            {<<"application/json">>, handle_type_provided},
+            {<<"text/json">>, handle_type_provided}
+        ],
+        Req,
+        State
+    };
 content_types_provided(Req, #state{operation_id = 'get_auctions'} = State) ->
-    {[
-      {<<"text/plain">>, handle_type_provided},
-      {<<"application/json">>, handle_type_provided},
-      {<<"text/json">>, handle_type_provided}
-     ], Req, State};
+    {
+        [
+            {<<"text/plain">>, handle_type_provided},
+            {<<"application/json">>, handle_type_provided},
+            {<<"text/json">>, handle_type_provided}
+        ],
+        Req,
+        State
+    };
 content_types_provided(Req, State) ->
     {[], Req, State}.
 
@@ -134,25 +157,37 @@ delete_resource(Req, State) ->
     {true =:= Res, Req1, State1}.
 
 -spec handle_type_accepted(cowboy_req:req(), state()) ->
-    { auctions_logic_handler:accept_callback_return(), cowboy_req:req(), state()}.
-handle_type_accepted(Req, #state{operation_id = OperationID,
-                                 accept_callback = Handler,
-                                 context = Context} = State) ->
-    Class = case OperationID of
-        'create_auction' -> 'createAuction';
-        _ -> 'getAuctions'
-    end,
+    {auctions_logic_handler:accept_callback_return(), cowboy_req:req(), state()}.
+handle_type_accepted(
+    Req,
+    #state{
+        operation_id = OperationID,
+        accept_callback = Handler,
+        context = Context
+    } = State
+) ->
+    Class =
+        case OperationID of
+            'create_auction' -> 'createAuction';
+            _ -> 'getAuctions'
+        end,
     {Res, Req1, Context1} = Handler(Class, OperationID, Req, Context),
     {Res, Req1, State#state{context = Context1}}.
 
 -spec handle_type_provided(cowboy_req:req(), state()) ->
-    { auctions_logic_handler:provide_callback_return(), cowboy_req:req(), state()}.
-handle_type_provided(Req, #state{operation_id = OperationID,
-                                 provide_callback = Handler,
-                                 context = Context} = State) ->
-    Class = case OperationID of
-        'create_auction' -> 'createAuction';
-        _ -> 'getAuctions'
-    end,
+    {auctions_logic_handler:provide_callback_return(), cowboy_req:req(), state()}.
+handle_type_provided(
+    Req,
+    #state{
+        operation_id = OperationID,
+        provide_callback = Handler,
+        context = Context
+    } = State
+) ->
+    Class =
+        case OperationID of
+            'create_auction' -> 'createAuction';
+            _ -> 'getAuctions'
+        end,
     {Res, Req1, Context1} = Handler(Class, OperationID, Req, Context),
     {Res, Req1, State#state{context = Context1}}.

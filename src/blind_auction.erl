@@ -35,19 +35,24 @@ inc(_Time, State) ->
 -spec try_get_amount_and_winner(state()) -> {ok, {integer(), binary()}} | undefined.
 try_get_amount_and_winner({ended, #ended_state{bids = Bids, type = Type}}) ->
     case Bids of
-        [] -> undefined;
+        [] ->
+            undefined;
         _ ->
-            SortedBids = lists:sort(fun(A, B) -> maps:get(amount, A) > maps:get(amount, B) end, Bids),
+            SortedBids = lists:sort(
+                fun(A, B) -> maps:get(amount, A) > maps:get(amount, B) end, Bids
+            ),
             Winner = hd(SortedBids),
             #{amount := Amount, user := User} = Winner,
-            FinalAmount = case Type of
-                vickrey ->
-                    case SortedBids of
-                        [_Winner, Second | _] -> maps:get(amount, Second);
-                        [_Winner] -> Amount
-                    end;
-                _ -> Amount
-            end,
+            FinalAmount =
+                case Type of
+                    vickrey ->
+                        case SortedBids of
+                            [_Winner, Second | _] -> maps:get(amount, Second);
+                            [_Winner] -> Amount
+                        end;
+                    _ ->
+                        Amount
+                end,
             {ok, {FinalAmount, User}}
     end;
 try_get_amount_and_winner(_) ->

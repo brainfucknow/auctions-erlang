@@ -8,10 +8,12 @@ Simple implementation of Auction API in C#<h4>Additional Information</h4><p> Inf
 -export([start/2]).
 -ignore_xref([start/2]).
 
--spec start(term(), #{transport      => tcp | ssl,
-                      transport_opts => ranch:opts(),
-                      protocol_opts  => cowboy:opts(),
-                      logic_handler  => module()}) ->
+-spec start(term(), #{
+    transport => tcp | ssl,
+    transport_opts => ranch:opts(),
+    protocol_opts => cowboy:opts(),
+    logic_handler => module()
+}) ->
     {ok, pid()} | {error, any()}.
 start(ID, Params) ->
     Transport = maps:get(transport, Params, tcp),

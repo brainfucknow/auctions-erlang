@@ -12,16 +12,13 @@ has_ended({ended, _}) -> true;
 has_ended(_) -> false.
 
 increment_test_() ->
-    {setup,
-     fun() -> ok end,
-     fun(_) -> ok end,
-     [
-      {"can increment twice", fun can_increment_twice/0},
-      {"wont end just after start", fun wont_end_just_after_start/0},
-      {"wont end just before end", fun wont_end_just_before_end/0},
-      {"wont end just before start", fun wont_end_just_before_start/0},
-      {"will have ended just after end", fun will_have_ended_just_after_end/0}
-     ]}.
+    {setup, fun() -> ok end, fun(_) -> ok end, [
+        {"can increment twice", fun can_increment_twice/0},
+        {"wont end just after start", fun wont_end_just_after_start/0},
+        {"wont end just before end", fun wont_end_just_before_end/0},
+        {"wont end just before start", fun wont_end_just_before_start/0},
+        {"will have ended just after end", fun will_have_ended_just_after_end/0}
+    ]}.
 
 can_increment_twice() ->
     Base = base_state(),

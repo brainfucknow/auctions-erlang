@@ -2,7 +2,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 auction_deserialization_test() ->
-    Json = <<"{\"id\":1,\"startsAt\":\"2016-01-01T00:00:00.000Z\",\"endsAt\":\"2016-02-01T00:00:00.000Z\",\"title\":\"First auction\"}">>,
+    Json =
+        <<"{\"id\":1,\"startsAt\":\"2016-01-01T00:00:00.000Z\",\"endsAt\":\"2016-02-01T00:00:00.000Z\",\"title\":\"First auction\"}">>,
     Decoded = auction_serialization:decode_auction_req(Json),
     Expected = #{
         id => 1,

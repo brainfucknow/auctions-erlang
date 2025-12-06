@@ -49,13 +49,16 @@ accept_callback(Class, OperationID, Req0, Context0) ->
     | 'createBid'
     | 'getAuctions'.
 
-
 -type operation_id() ::
-    'create_auction' | %% Create an auction
-    'add_bid' | %% Add a bid on an auction
-    'get_auction' | %% Get a single auction
-    'get_auctions' | %% Get all auctions
-    {error, unknown_operation}.
+    %% Create an auction
+    'create_auction'
+    %% Add a bid on an auction
+    | 'add_bid'
+    %% Get a single auction
+    | 'get_auction'
+    %% Get all auctions
+    | 'get_auctions'
+    | {error, unknown_operation}.
 
 -type request_param() :: atom().
 
@@ -64,32 +67,32 @@ accept_callback(Class, OperationID, Req0, Context0) ->
 -dialyzer({nowarn_function, [validate_response_body/4]}).
 
 -type rule() ::
-    {type, binary} |
-    {type, byte} |
-    {type, integer} |
-    {type, float} |
-    {type, boolean} |
-    {type, date} |
-    {type, datetime} |
-    {enum, [atom()]} |
-    {max, Max :: number()} |
-    {exclusive_max, Max :: number()} |
-    {min, Min :: number()} |
-    {exclusive_min, Min :: number()} |
-    {max_length, MaxLength :: integer()} |
-    {min_length, MaxLength :: integer()} |
-    {pattern, Pattern :: string()} |
-    {schema, object | list, binary()} |
-    schema |
-    required |
-    not_required.
+    {type, binary}
+    | {type, byte}
+    | {type, integer}
+    | {type, float}
+    | {type, boolean}
+    | {type, date}
+    | {type, datetime}
+    | {enum, [atom()]}
+    | {max, Max :: number()}
+    | {exclusive_max, Max :: number()}
+    | {min, Min :: number()}
+    | {exclusive_min, Min :: number()}
+    | {max_length, MaxLength :: integer()}
+    | {min_length, MaxLength :: integer()}
+    | {pattern, Pattern :: string()}
+    | {schema, object | list, binary()}
+    | schema
+    | required
+    | not_required.
 
--doc #{equiv => prepare_validator/2}.
+-doc #{equiv => prepare_validator / 2}.
 -spec prepare_validator() -> jesse_state:state().
 prepare_validator() ->
     prepare_validator(<<"http://json-schema.org/draft-06/schema#">>).
 
--doc #{equiv => prepare_validator/2}.
+-doc #{equiv => prepare_validator / 2}.
 -spec prepare_validator(binary()) -> jesse_state:state().
 prepare_validator(SchemaVer) ->
     prepare_validator(get_auctions_path(), SchemaVer).
@@ -108,11 +111,12 @@ Automatically loads the entire body from the cowboy req
 and validates the JSON body against the schema.
 """.
 -spec populate_request(
-        OperationID :: operation_id(),
-        Req :: cowboy_req:req(),
-        ValidatorState :: jesse_state:state()) ->
-    {ok, Model :: #{}, Req :: cowboy_req:req()} |
-    {error, Reason :: any(), Req :: cowboy_req:req()}.
+    OperationID :: operation_id(),
+    Req :: cowboy_req:req(),
+    ValidatorState :: jesse_state:state()
+) ->
+    {ok, Model :: #{}, Req :: cowboy_req:req()}
+    | {error, Reason :: any(), Req :: cowboy_req:req()}.
 populate_request(OperationID, Req, ValidatorState) ->
     Params = request_params(OperationID),
     populate_request_params(OperationID, Params, Req, ValidatorState, #{}).
@@ -122,10 +126,11 @@ Validates that the provided `Code` and `Body` comply with the `ValidatorState` s
 for the `OperationID` operation.
 """.
 -spec validate_response(
-        OperationID :: operation_id(),
-        Code :: 200..599,
-        Body :: jesse:json_term(),
-        ValidatorState :: jesse_state:state()) ->
+    OperationID :: operation_id(),
+    Code :: 200..599,
+    Body :: jesse:json_term(),
+    ValidatorState :: jesse_state:state()
+) ->
     ok | {ok, term()} | [ok | {ok, term()}] | no_return().
 validate_response('create_auction', 200, Body, ValidatorState) ->
     validate_response_body('', '', Body, ValidatorState);
@@ -237,7 +242,8 @@ request_param_info(OperationID, Name) ->
     error({unknown_param, OperationID, Name}).
 
 -spec populate_request_params(
-        operation_id(), [request_param()], cowboy_req:req(), jesse_state:state(), map()) ->
+    operation_id(), [request_param()], cowboy_req:req(), jesse_state:state(), map()
+) ->
     {ok, map(), cowboy_req:req()} | {error, _, cowboy_req:req()}.
 populate_request_params(_, [], Req, _, Model) ->
     {ok, Model, Req};
@@ -251,7 +257,8 @@ populate_request_params(OperationID, [ReqParamName | T], Req0, ValidatorState, M
     end.
 
 -spec populate_request_param(
-        operation_id(), request_param(), cowboy_req:req(), jesse_state:state()) ->
+    operation_id(), request_param(), cowboy_req:req(), jesse_state:state()
+) ->
     {ok, term(), cowboy_req:req()} | {error, term(), cowboy_req:req()}.
 populate_request_param(OperationID, ReqParamName, Req0, ValidatorState) ->
     #{rules := Rules, source := Source} = request_param_info(OperationID, ReqParamName),
@@ -261,16 +268,15 @@ populate_request_param(OperationID, ReqParamName, Req0, ValidatorState) ->
         {Value, Req} ->
             case prepare_param(Rules, ReqParamName, Value, ValidatorState) of
                 {ok, Result} -> {ok, Result, Req};
-                {error, Reason} ->
-                    {error, Reason, Req}
+                {error, Reason} -> {error, Reason, Req}
             end
     end.
 
 validate_response_body(list, ReturnBaseType, Body, ValidatorState) ->
     [
         validate(schema, Item, ReturnBaseType, ValidatorState)
-    || Item <- Body];
-
+     || Item <- Body
+    ];
 validate_response_body(_, ReturnBaseType, Body, ValidatorState) ->
     validate(schema, Body, ReturnBaseType, ValidatorState).
 
@@ -300,14 +306,19 @@ validate({exclusive_max, Max}, Value, _, _) when Value < Max ->
     ok;
 validate({exclusive_min, Min}, Value, _, _) when Min < Value ->
     ok;
-validate({max_length, MaxLength}, Value, _, _) when is_binary(Value), byte_size(Value) =< MaxLength ->
+validate({max_length, MaxLength}, Value, _, _) when
+    is_binary(Value), byte_size(Value) =< MaxLength
+->
     ok;
-validate({min_length, MinLength}, Value, _, _) when is_binary(Value), MinLength =< byte_size(Value) ->
+validate({min_length, MinLength}, Value, _, _) when
+    is_binary(Value), MinLength =< byte_size(Value)
+->
     ok;
 validate(Rule = {type, byte}, Value, ReqParamName, _) when is_binary(Value) ->
     try base64:decode(Value) of
         Decoded -> {ok, Decoded}
-    catch error:_Error -> validation_error(Rule, ReqParamName, Value)
+    catch
+        error:_Error -> validation_error(Rule, ReqParamName, Value)
     end;
 validate(Rule = {type, boolean}, Value, ReqParamName, _) when is_binary(Value) ->
     case to_binary(string:lowercase(Value)) of
@@ -337,7 +348,8 @@ validate(Rule = {type, date}, Value, ReqParamName, _) ->
 validate(Rule = {type, datetime}, Value, ReqParamName, _) ->
     try calendar:rfc3339_to_system_time(binary_to_list(Value)) of
         _ -> ok
-    catch error:_Error -> validation_error(Rule, ReqParamName, Value)
+    catch
+        error:_Error -> validation_error(Rule, ReqParamName, Value)
     end;
 validate(Rule = {enum, Values}, Value, ReqParamName, _) ->
     try
@@ -361,9 +373,11 @@ validate(schema, Value, ReqParamName, ValidatorState) ->
     validate({schema, object, Definition}, Value, ReqParamName, ValidatorState);
 validate({schema, list, Definition}, Value, ReqParamName, ValidatorState) ->
     lists:foreach(
-      fun(Item) ->
-              validate({schema, object, Definition}, Item, ReqParamName, ValidatorState)
-      end, Value);
+        fun(Item) ->
+            validate({schema, object, Definition}, Item, ReqParamName, ValidatorState)
+        end,
+        Value
+    );
 validate(Rule = {schema, object, Definition}, Value, ReqParamName, ValidatorState) ->
     try
         _ = validate_with_schema(Value, Definition, ValidatorState),
@@ -396,8 +410,8 @@ validation_error(ViolatedRule, Name, Value, Info) ->
     throw({wrong_param, Name, Value, ViolatedRule, Info}).
 
 -spec get_value(body | qs_val | header | binding, request_param(), cowboy_req:req()) ->
-    {any(), cowboy_req:req()} |
-    {error, any(), cowboy_req:req()}.
+    {any(), cowboy_req:req()}
+    | {error, any(), cowboy_req:req()}.
 get_value(body, _Name, Req0) ->
     {ok, Body, Req} = read_entire_body(Req0),
     case prepare_body(Body) of
@@ -423,7 +437,8 @@ read_entire_body(Req) ->
     read_entire_body(Req, []).
 
 -spec read_entire_body(cowboy_req:req(), iodata()) -> {ok, binary(), cowboy_req:req()}.
-read_entire_body(Request, Acc) -> % {
+% {
+read_entire_body(Request, Acc) ->
     case cowboy_req:read_body(Request) of
         {ok, Data, NewRequest} ->
             {ok, iolist_to_binary(lists:reverse([Data | Acc])), NewRequest};
@@ -466,8 +481,8 @@ prepare_param(Rules, ReqParamName, Value, ValidatorState) ->
     end.
 
 -spec to_binary(iodata()) -> binary().
-to_binary(V) when is_binary(V)  -> V;
-to_binary(V) when is_list(V)    -> iolist_to_binary(V).
+to_binary(V) when is_binary(V) -> V;
+to_binary(V) when is_list(V) -> iolist_to_binary(V).
 
 -spec to_header(request_param()) -> binary().
 to_header(Name) ->
@@ -501,12 +516,12 @@ priv_dir(AppName) ->
             Value ++ "/";
         _Error ->
             select_priv_dir([filename:join(["apps", atom_to_list(AppName), "priv"]), "priv"])
-     end.
+    end.
 
 select_priv_dir(Paths) ->
     case lists:dropwhile(fun test_priv_dir/1, Paths) of
         [Path | _] -> Path;
-        _          -> exit(no_priv_dir)
+        _ -> exit(no_priv_dir)
     end.
 
 test_priv_dir(Path) ->

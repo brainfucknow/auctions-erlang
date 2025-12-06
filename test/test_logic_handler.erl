@@ -37,7 +37,9 @@ accept_callback('createAuction', 'create_auction', Req, Context) ->
                     %% Return 200 OK with the created auction event
                     %% Haskell spec expects "AuctionAdded" event
                     RespBody = encode_auction_added(CreatedAuction),
-                    Req2 = cowboy_req:reply(200, #{<<"content-type">> => <<"application/json">>}, RespBody, Req1),
+                    Req2 = cowboy_req:reply(
+                        200, #{<<"content-type">> => <<"application/json">>}, RespBody, Req1
+                    ),
                     {stop, Req2, Context};
                 {error, exists} ->
                     %% Haskell spec expects 400 "AuctionAlreadyExists 1"
@@ -50,7 +52,6 @@ accept_callback('createAuction', 'create_auction', Req, Context) ->
             Req2 = cowboy_req:reply(400, #{}, io_lib:format("~p", [Reason]), Req1),
             {stop, Req2, Context}
     end;
-
 accept_callback('createBid', 'add_bid', Req, Context) ->
     ValidatorState = auctions_api:prepare_validator(),
     case auctions_api:populate_request('add_bid', Req, ValidatorState) of
@@ -61,27 +62,33 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
             %% Haskell spec sends x-jwt-payload.
             %% The bid request in Haskell spec is {"amount":11}.
             %% The response is BidAccepted event.
-            
+
             %% We need to get the user from the header manually since auctions_auth is bypassed
             Headers = cowboy_req:headers(Req1),
-            User = case maps:get(<<"x-jwt-payload">>, Headers, undefined) of
-                undefined -> <<"unknown">>;
-                Jwt -> 
-                    %% Simple decode for test
-                    try 
-                        Decoded = base64:decode(Jwt),
-                        Json = json:decode(Decoded),
-                        Sub = maps:get(<<"sub">>, Json),
-                        Name = maps:get(<<"name">>, Json),
-                        %% Format: BuyerOrSeller|id|Name
-                        iolist_to_binary(io_lib:format("BuyerOrSeller|~s|~s", [Sub, Name]))
-                    catch _:_ -> <<"unknown">> end
-            end,
+            User =
+                case maps:get(<<"x-jwt-payload">>, Headers, undefined) of
+                    undefined ->
+                        <<"unknown">>;
+                    Jwt ->
+                        %% Simple decode for test
+                        try
+                            Decoded = base64:decode(Jwt),
+                            Json = json:decode(Decoded),
+                            Sub = maps:get(<<"sub">>, Json),
+                            Name = maps:get(<<"name">>, Json),
+                            %% Format: BuyerOrSeller|id|Name
+                            iolist_to_binary(io_lib:format("BuyerOrSeller|~s|~s", [Sub, Name]))
+                        catch
+                            _:_ -> <<"unknown">>
+                        end
+                end,
 
             case gen_server:call(?MODULE, {add_bid, AuctionId, BidReq, User}) of
                 {ok, BidEvent} ->
                     RespBody = encode_bid_accepted(BidEvent),
-                    Req2 = cowboy_req:reply(200, #{<<"content-type">> => <<"application/json">>}, RespBody, Req1),
+                    Req2 = cowboy_req:reply(
+                        200, #{<<"content-type">> => <<"application/json">>}, RespBody, Req1
+                    ),
                     {stop, Req2, Context};
                 {error, not_found} ->
                     Req2 = cowboy_req:reply(404, #{}, <<"\"Auction not found\"">>, Req1),
@@ -99,7 +106,6 @@ provide_callback('getAuctions', 'get_auctions', Req, Context) ->
     Auctions = gen_server:call(?MODULE, get_auctions),
     RespBody = json:encode([format_auction(A) || A <- Auctions]),
     {RespBody, Req, Context};
-
 provide_callback('createAuction', 'get_auction', Req, Context) ->
     %% Note: 'createAuction' class is used for get_auction in auctions_router?
     %% Let's check auctions_router.erl.
@@ -109,7 +115,6 @@ provide_callback('createAuction', 'get_auction', Req, Context) ->
     %% So this clause might be wrong if I use 'createAuction'.
     %% But let's implement for 'getAuctions'.
     provide_callback('getAuctions', 'get_auction', Req, Context);
-
 provide_callback('getAuctions', 'get_auction', Req, Context) ->
     ValidatorState = auctions_api:prepare_validator(),
     case auctions_api:populate_request('get_auction', Req, ValidatorState) of
@@ -129,10 +134,9 @@ provide_callback('getAuctions', 'get_auction', Req, Context) ->
                     {stop, Req2, Context}
             end;
         {error, _Reason, Req1} ->
-             Req2 = cowboy_req:reply(400, #{}, <<"Bad Request">>, Req1),
-             {stop, Req2, Context}
+            Req2 = cowboy_req:reply(400, #{}, <<"Bad Request">>, Req1),
+            {stop, Req2, Context}
     end.
-
 
 %% gen_server implementation
 
@@ -141,7 +145,6 @@ init([]) ->
 
 handle_call(reset, _From, _State) ->
     {reply, ok, #state{auctions = #{}}};
-
 handle_call({create_auction, AuctionReq}, _From, State = #state{auctions = Auctions}) ->
     Id = maps:get(<<"id">>, AuctionReq),
     case maps:is_key(Id, Auctions) of
@@ -155,12 +158,12 @@ handle_call({create_auction, AuctionReq}, _From, State = #state{auctions = Aucti
                 <<"bids">> => [],
                 <<"winner">> => null,
                 <<"winnerPrice">> => null,
-                <<"type">> => <<"English|0|0|0">> %% Default for test
+                %% Default for test
+                <<"type">> => <<"English|0|0|0">>
             },
             NewAuctions = maps:put(Id, Auction, Auctions),
             {reply, {ok, Auction}, State#state{auctions = NewAuctions}}
     end;
-
 handle_call({add_bid, AuctionId, BidReq, User}, _From, State = #state{auctions = Auctions}) ->
     case maps:find(AuctionId, Auctions) of
         {ok, Auction} ->
@@ -173,25 +176,24 @@ handle_call({add_bid, AuctionId, BidReq, User}, _From, State = #state{auctions =
                 <<"bidder">> => User,
                 <<"auction">> => AuctionId,
                 <<"user">> => User,
-                <<"at">> => <<"2018-08-04T00:00:00Z">> %% Mock time
+                %% Mock time
+                <<"at">> => <<"2018-08-04T00:00:00Z">>
             },
-            NewBids = [NewBid | Bids], %% Prepend
+            %% Prepend
+            NewBids = [NewBid | Bids],
             NewAuction = Auction#{<<"bids">> => NewBids},
             NewAuctions = maps:put(AuctionId, NewAuction, Auctions),
             {reply, {ok, NewBid}, State#state{auctions = NewAuctions}};
         error ->
             {reply, {error, not_found}, State}
     end;
-
 handle_call(get_auctions, _From, State = #state{auctions = Auctions}) ->
     {reply, maps:values(Auctions), State};
-
 handle_call({get_auction, Id}, _From, State = #state{auctions = Auctions}) ->
     case maps:find(Id, Auctions) of
         {ok, Auction} -> {reply, {ok, Auction}, State};
         error -> {reply, {error, not_found}, State}
     end;
-
 handle_call(_Request, _From, State) ->
     {reply, ok, State}.
 
@@ -232,6 +234,8 @@ format_auction_event(Auction) ->
     %% "id", "startsAt", "title", "expiry", "user", "type", "currency"
     %% We need to construct "user" and "type" if missing.
     Auction#{
-        <<"user">> => <<"BuyerOrSeller|a1|Test">>, %% Mock
-        <<"expiry">> => maps:get(<<"endsAt">>, Auction) %% Map endsAt to expiry
+        %% Mock
+        <<"user">> => <<"BuyerOrSeller|a1|Test">>,
+        %% Map endsAt to expiry
+        <<"expiry">> => maps:get(<<"endsAt">>, Auction)
     }.

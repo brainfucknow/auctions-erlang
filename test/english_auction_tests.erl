@@ -11,15 +11,15 @@ english_auction_test() ->
     %% Setup
     OptionsStr = "English|0|0|0",
     Auction = english_auction:new(#{ends_at => sample_ends_at(), options => OptionsStr}),
-    
+
     %% 1. Can add bid to empty state
     {StateWith1Bid, Result1} = english_auction:add_bid(bid1(), Auction),
     ?assertEqual(ok, Result1),
-    
+
     %% 2. Can add second bid
     {StateWith2Bids, Result2} = english_auction:add_bid(bid2(), StateWith1Bid),
     ?assertEqual(ok, Result2),
-    
+
     %% 3. Can end (empty)
     EmptyEndedState = english_auction:inc(sample_ends_at(), Auction),
     ?assertMatch({ended, _}, EmptyEndedState),
@@ -52,13 +52,13 @@ serialization_test() ->
     Parsed = english_auction:parse_options(SampleTypStr),
     %% {options, Min, Reserve, Inc}
     ?assertMatch({options, 0, 0, 0}, Parsed),
-    
+
     Serialized = english_auction:format_options(Parsed),
     ?assertEqual(SampleTypStr, Serialized),
 
     SampleWithValuesTypStr = "English|10|20|30",
     ParsedValues = english_auction:parse_options(SampleWithValuesTypStr),
     ?assertMatch({options, 10, 20, 30}, ParsedValues),
-    
+
     SerializedValues = english_auction:format_options(ParsedValues),
     ?assertEqual(SampleWithValuesTypStr, SerializedValues).

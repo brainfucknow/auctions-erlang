@@ -8,10 +8,16 @@ start(_StartType, _StartArgs) ->
     %% Start the HTTP server
     %% We use the default configuration as suggested in the README/generated code pattern
     %% but adapted for this app structure.
-    {ok, _} = auctions_server:start(auctions_http,
-        #{transport_opts => [{ip, {0,0,0,0}}, %% Listen on all interfaces
-                             {port, 8080}
-                            ]}),
+    {ok, _} = auctions_server:start(
+        auctions_http,
+        %% Listen on all interfaces
+        #{
+            transport_opts => [
+                {ip, {0, 0, 0, 0}},
+                {port, 8080}
+            ]
+        }
+    ),
     {ok, Pid}.
 
 stop(_State) ->

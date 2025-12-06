@@ -25,32 +25,40 @@ decode_map(_) ->
     {error, missing_type_field}.
 
 decode_auction(Map) ->
-    #{<<"id">> := Id,
-      <<"startsAt">> := StartsAt,
-      <<"title">> := Title,
-      <<"expiry">> := Expiry,
-      <<"user">> := UserStr,
-      <<"type">> := TypeStr,
-      <<"currency">> := Currency} = Map,
-    #{id => Id,
-      starts_at => StartsAt,
-      title => Title,
-      expiry => Expiry,
-      user => decode_user(UserStr),
-      type => decode_auction_type(TypeStr),
-      currency => Currency}.
+    #{
+        <<"id">> := Id,
+        <<"startsAt">> := StartsAt,
+        <<"title">> := Title,
+        <<"expiry">> := Expiry,
+        <<"user">> := UserStr,
+        <<"type">> := TypeStr,
+        <<"currency">> := Currency
+    } = Map,
+    #{
+        id => Id,
+        starts_at => StartsAt,
+        title => Title,
+        expiry => Expiry,
+        user => decode_user(UserStr),
+        type => decode_auction_type(TypeStr),
+        currency => Currency
+    }.
 
 decode_bid(Map) ->
-    #{<<"id">> := Id,
-      <<"auction">> := AuctionId,
-      <<"user">> := UserStr,
-      <<"amount">> := Amount,
-      <<"at">> := At} = Map,
-    #{id => Id,
-      auction_id => AuctionId,
-      user => decode_user(UserStr),
-      amount => Amount,
-      at => At}.
+    #{
+        <<"id">> := Id,
+        <<"auction">> := AuctionId,
+        <<"user">> := UserStr,
+        <<"amount">> := Amount,
+        <<"at">> := At
+    } = Map,
+    #{
+        id => Id,
+        auction_id => AuctionId,
+        user => decode_user(UserStr),
+        amount => Amount,
+        at => At
+    }.
 
 decode_user(Bin) ->
     case binary:split(Bin, <<"|">>, [global]) of
@@ -62,58 +70,82 @@ decode_auction_type(Bin) ->
     case binary:split(Bin, <<"|">>, [global]) of
         [<<"English">>, Min, Reserve, Inc] ->
             {english, binary_to_integer(Min), binary_to_integer(Reserve), binary_to_integer(Inc)};
-        [<<"Vickrey">>] -> vickrey;
-        [<<"Blind">>] -> blind;
-        _ -> Bin
+        [<<"Vickrey">>] ->
+            vickrey;
+        [<<"Blind">>] ->
+            blind;
+        _ ->
+            Bin
     end.
 
 encode({add_auction, At, Auction}) ->
-    Map = #{<<"$type">> => <<"AddAuction">>,
-            <<"at">> => At,
-            <<"auction">> => encode_auction(Auction)},
+    Map = #{
+        <<"$type">> => <<"AddAuction">>,
+        <<"at">> => At,
+        <<"auction">> => encode_auction(Auction)
+    },
     json:encode(Map);
 encode({place_bid, At, Bid}) ->
-    Map = #{<<"$type">> => <<"PlaceBid">>,
-            <<"at">> => At,
-            <<"bid">> => encode_bid(Bid)},
+    Map = #{
+        <<"$type">> => <<"PlaceBid">>,
+        <<"at">> => At,
+        <<"bid">> => encode_bid(Bid)
+    },
     json:encode(Map).
 
 encode_auction(Auction) ->
-    #{id := Id,
-      starts_at := StartsAt,
-      title := Title,
-      expiry := Expiry,
-      user := User,
-      type := Type,
-      currency := Currency} = Auction,
-    #{<<"id">> => Id,
-      <<"startsAt">> => StartsAt,
-      <<"title">> => Title,
-      <<"expiry">> => Expiry,
-      <<"user">> => encode_user(User),
-      <<"type">> => encode_auction_type(Type),
-      <<"currency">> => Currency}.
+    #{
+        id := Id,
+        starts_at := StartsAt,
+        title := Title,
+        expiry := Expiry,
+        user := User,
+        type := Type,
+        currency := Currency
+    } = Auction,
+    #{
+        <<"id">> => Id,
+        <<"startsAt">> => StartsAt,
+        <<"title">> => Title,
+        <<"expiry">> => Expiry,
+        <<"user">> => encode_user(User),
+        <<"type">> => encode_auction_type(Type),
+        <<"currency">> => Currency
+    }.
 
 encode_bid(Bid) ->
-    #{id := Id,
-      auction_id := AuctionId,
-      user := User,
-      amount := Amount,
-      at := At} = Bid,
-    #{<<"id">> => Id,
-      <<"auction">> => AuctionId,
-      <<"user">> => encode_user(User),
-      <<"amount">> => Amount,
-      <<"at">> => At}.
+    #{
+        id := Id,
+        auction_id := AuctionId,
+        user := User,
+        amount := Amount,
+        at := At
+    } = Bid,
+    #{
+        <<"id">> => Id,
+        <<"auction">> => AuctionId,
+        <<"user">> => encode_user(User),
+        <<"amount">> => Amount,
+        <<"at">> => At
+    }.
 
 encode_user(#{id := Id, name := Name}) ->
     iolist_to_binary([<<"BuyerOrSeller|">>, Id, <<"|">>, Name]);
 encode_user(Bin) when is_binary(Bin) -> Bin.
 
 encode_auction_type({english, Min, Reserve, Inc}) ->
-    iolist_to_binary([<<"English|">>, integer_to_integer(Min), <<"|">>, integer_to_integer(Reserve), <<"|">>, integer_to_integer(Inc)]);
-encode_auction_type(vickrey) -> <<"Vickrey">>;
-encode_auction_type(blind) -> <<"Blind">>.
+    iolist_to_binary([
+        <<"English|">>,
+        integer_to_integer(Min),
+        <<"|">>,
+        integer_to_integer(Reserve),
+        <<"|">>,
+        integer_to_integer(Inc)
+    ]);
+encode_auction_type(vickrey) ->
+    <<"Vickrey">>;
+encode_auction_type(blind) ->
+    <<"Blind">>.
 
 integer_to_integer(I) when is_integer(I) -> integer_to_binary(I);
 integer_to_integer(B) when is_binary(B) -> B.
@@ -123,7 +155,8 @@ read_jsonl(Filename) ->
         {ok, Binary} ->
             Lines = binary:split(Binary, <<"\n">>, [global, trim]),
             {ok, [decode(Line) || Line <- Lines, Line =/= <<>>]};
-        Error -> Error
+        Error ->
+            Error
     end.
 
 parse_amount(Bin) ->
@@ -144,16 +177,19 @@ decode_auction_req(Json) when is_binary(Json) ->
     Title = maps:get(<<"title">>, Map),
     EndsAt = maps:get(<<"endsAt">>, Map),
     Currency = maps:get(<<"currency">>, Map, <<"VAC">>),
-    Type = case maps:get(<<"type">>, Map, undefined) of
-        undefined -> {english, 0, 0, 0};
-        T -> decode_auction_type(T)
-    end,
-    #{id => Id,
-      starts_at => StartsAt,
-      title => Title,
-      ends_at => EndsAt,
-      currency => Currency,
-      type => Type}.
+    Type =
+        case maps:get(<<"type">>, Map, undefined) of
+            undefined -> {english, 0, 0, 0};
+            T -> decode_auction_type(T)
+        end,
+    #{
+        id => Id,
+        starts_at => StartsAt,
+        title => Title,
+        ends_at => EndsAt,
+        currency => Currency,
+        type => Type
+    }.
 
 decode_bid_req(Json) when is_binary(Json) ->
     Map = json:decode(Json),
