@@ -11,6 +11,9 @@ start_app() ->
     application:ensure_all_started(jesse),
     application:load(auctions),
     
+    %% Start the store manually since we are not starting the full app
+    auction_store:start_link(),
+
     %% Start the API server with REAL logic handler
     Port = 0,
     {ok, _Pid} = auctions_server:start(integration_test_listener, #{

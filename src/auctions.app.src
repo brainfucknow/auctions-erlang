@@ -4,6 +4,7 @@
    "Simple implementation of Auction API in C#&lt;h4&gt;Additional Information&lt;/h4&gt;&lt;p&gt; Informational version: 1.0.0+7564e74c16094a7aedec80c38dd83865b2efe8fd&lt;/p&gt;"},
   {vsn, "1.0.0"},
   {registered, []},
+  {mod, {auctions_app, []}},
   {applications, [kernel, stdlib, public_key, ssl, inets, ranch, cowboy, jesse]},
   {env, [{dets_file, "auction_store.dets"}]},
   {modules, []},

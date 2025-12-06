@@ -46,14 +46,19 @@ handle_call({create_auction, Info, Mod, LogicState}, _From, State = #state{aucti
 handle_call({add_bid, AuctionId, Bid}, _From, State = #state{auctions = Auctions}) ->
     case maps:find(AuctionId, Auctions) of
         {ok, Entry = #auction_entry{logic_mod = Mod, logic_state = LogicState}} ->
-            case Mod:add_bid(Bid, LogicState) of
-                {NewLogicState, ok} ->
-                    NewEntry = Entry#auction_entry{logic_state = NewLogicState},
+            Now = os:system_time(millisecond),
+            LogicState1 = Mod:inc(Now, LogicState),
+            case Mod:add_bid(Bid, LogicState1) of
+                {LogicState2, ok} ->
+                    NewEntry = Entry#auction_entry{logic_state = LogicState2},
                     ok = dets:insert(?DETS_TABLE, {AuctionId, NewEntry}),
                     NewAuctions = maps:put(AuctionId, NewEntry, Auctions),
                     {reply, ok, State#state{auctions = NewAuctions}};
-                {_, {error, Reason}} ->
-                    {reply, {error, Reason}, State}
+                {LogicState2, {error, Reason}} ->
+                    NewEntry = Entry#auction_entry{logic_state = LogicState2},
+                    ok = dets:insert(?DETS_TABLE, {AuctionId, NewEntry}),
+                    NewAuctions = maps:put(AuctionId, NewEntry, Auctions),
+                    {reply, {error, Reason}, State#state{auctions = NewAuctions}}
             end;
         error ->
             {reply, {error, not_found}, State}

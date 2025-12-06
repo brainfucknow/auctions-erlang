@@ -1,2 +1,2 @@
 #!/bin/bash
-rebar3 shell --eval 'application:ensure_all_started(auctions), auctions_server:start(http_server, #{transport => tcp, transport_opts => #{socket_opts => [{port, 8080}]}}).'
+rebar3 shell --eval 'application:ensure_all_started(auctions).'

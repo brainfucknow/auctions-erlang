@@ -3,6 +3,7 @@
 
 persistence_test() ->
     %% Clean up any previous run
+    catch gen_server:stop(auction_store),
     file:delete("auction_store.dets"),
     
     %% Start the store
@@ -10,7 +11,7 @@ persistence_test() ->
     
     %% Create an auction
     Info = #{id => 1, title => <<"Test Auction">>, starts_at => <<"now">>, ends_at => <<"later">>, currency => <<"USD">>, type => {english, 0, 0, 0}},
-    LogicState = english_auction:new(#{ends_at => 1000000000000}),
+    LogicState = english_auction:new(#{ends_at => 3000000000000}),
     ok = auction_store:create_auction(Info, english_auction, LogicState),
     
     %% Verify it's there
@@ -31,6 +32,7 @@ persistence_test() ->
 
 persistence_bid_test() ->
     %% Clean up any previous run
+    catch gen_server:stop(auction_store),
     file:delete("auction_store.dets"),
     
     %% Start the store
@@ -38,7 +40,7 @@ persistence_bid_test() ->
     
     %% Create an auction
     Info = #{id => 1, title => <<"Test Auction">>, starts_at => <<"now">>, ends_at => <<"later">>, currency => <<"USD">>, type => {english, 0, 0, 0}},
-    LogicState = english_auction:new(#{ends_at => 1000000000000}),
+    LogicState = english_auction:new(#{ends_at => 3000000000000}),
     ok = auction_store:create_auction(Info, english_auction, LogicState),
     
     %% Add a bid
@@ -62,6 +64,7 @@ persistence_bid_test() ->
 
 config_test() ->
     %% Set a custom file path
+    catch gen_server:stop(auction_store),
     CustomFile = "custom_store.dets",
     file:delete(CustomFile),
     application:set_env(auctions, dets_file, CustomFile),
@@ -71,7 +74,7 @@ config_test() ->
     
     %% Create an auction
     Info = #{id => 2, title => <<"Custom Auction">>, starts_at => <<"now">>, ends_at => <<"later">>, currency => <<"USD">>, type => {english, 0, 0, 0}},
-    LogicState = english_auction:new(#{ends_at => 1000000000000}),
+    LogicState = english_auction:new(#{ends_at => 3000000000000}),
     ok = auction_store:create_auction(Info, english_auction, LogicState),
     
     %% Stop the store

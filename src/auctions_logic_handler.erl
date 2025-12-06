@@ -70,7 +70,11 @@ accept_callback('createAuction', 'create_auction', Req, Context) ->
             Req2 = cowboy_req:set_resp_body(Body, Req1),
             {true, Req2, Context}
     catch
-        _:_ ->
+        Class:Reason:Stacktrace ->
+            ?LOG_ERROR(#{what => "Error processing create_auction",
+                         class => Class,
+                         reason => Reason,
+                         stacktrace => Stacktrace}),
             {false, Req1, Context}
     end;
 accept_callback('createBid', 'add_bid', Req, Context) ->
@@ -111,11 +115,19 @@ accept_callback('createBid', 'add_bid', Req, Context) ->
                             {stop, Req2, Context}
                     end
             catch
-                _:_ ->
+                Class:Reason:Stacktrace ->
+                    ?LOG_ERROR(#{what => "Error processing add_bid inner",
+                                 class => Class,
+                                 reason => Reason,
+                                 stacktrace => Stacktrace}),
                     {false, Req1, Context}
             end
     catch
-        _:_ ->
+        Class:Reason:Stacktrace ->
+             ?LOG_ERROR(#{what => "Error processing add_bid outer",
+                          class => Class,
+                          reason => Reason,
+                          stacktrace => Stacktrace}),
              {false, Req, Context}
     end;
 accept_callback(Class, OperationID, Req, Context) ->
@@ -143,7 +155,11 @@ provide_callback('getAuctions', 'get_auction', Req, Context) ->
                     {json:encode(Auction), Req, Context}
             end
     catch
-        _:_ ->
+        Class:Reason:Stacktrace ->
+            ?LOG_ERROR(#{what => "Error processing get_auction",
+                         class => Class,
+                         reason => Reason,
+                         stacktrace => Stacktrace}),
             {json:encode(null), Req, Context}
     end;
 provide_callback(Class, OperationID, Req, Context) ->
